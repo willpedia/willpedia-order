@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Willpedia Order Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+  <h1>📊 Willpedia</h1>
+  <p class="subtitle">Rekap Order Bulan Ini</p>
+
+  <div class="stats">
+    <div class="card">
+      <span>Total Order</span>
+      <h2 id="totalOrder">0</h2>
+    </div>
+    <div class="card">
+      <span>Total Omset</span>
+      <h2 id="totalOmset">Rp 0</h2>
+    </div>
+  </div>
+
+  <form id="orderForm">
+    <h3>➕ Input Order</h3>
+    <input type="text" id="game" placeholder="Nama Game" required>
+    <input type="text" id="layanan" placeholder="Layanan" required>
+    <input type="number" id="harga" placeholder="Harga (Rp)" required>
+    <button type="submit">Simpan Order</button>
+    <p id="status"></p>
+  </form>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
