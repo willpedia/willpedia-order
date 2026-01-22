@@ -12,6 +12,25 @@
   <h1>📊 Willpedia</h1>
   <p class="subtitle">Rekap Order Bulan Ini</p>
 
+  <div class="filter">
+    <select id="bulan">
+        <option value="0">Januari</option>
+        <option value="1">Februari</option>
+        <option value="2">Maret</option>
+        <option value="3">April</option>
+        <option value="4">Mei</option>
+        <option value="5">Juni</option>
+        <option value="6">Juli</option>
+        <option value="7">Agustus</option>
+        <option value="8">September</option>
+        <option value="9">Oktober</option>
+        <option value="10">November</option>
+        <option value="11">Desember</option>
+    </select>
+
+    <select id="tahun"></select>
+   </div>
+
   <div class="stats">
     <div class="card">
       <span>Total Order</span>
@@ -22,6 +41,19 @@
       <h2 id="totalOmset">Rp 0</h2>
     </div>
   </div>
+
+  <div class="yearly">
+    <h3>📅 Rekap Tahunan</h3>
+    <div class="yearly-card">
+        <span>Total Order 1 Tahun</span>
+        <h2 id="yearOrder">0</h2>
+    </div>
+    <div class="yearly-card">
+        <span>Total Omset 1 Tahun</span>
+        <h2 id="yearOmset">Rp 0</h2>
+    </div>
+  </div>
+
 
   <form id="orderForm">
     <h3>➕ Input Order</h3>
