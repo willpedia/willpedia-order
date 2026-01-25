@@ -1,87 +1,93 @@
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzTI_im_QXPxxHIDOQRICr36lROJjgDJAju1nWwVGvTrrotfOc4IG3bNpBy7sZ8ZKwmVw/exec";
 
-const totalOrderEl = document.getElementById("totalOrder");
-const totalOmsetEl = document.getElementById("totalOmset");
-const statusEl = document.getElementById("status");
-const bulanSelect = document.getElementById("bulan");
-const tahunSelect = document.getElementById("tahun");
-const yearOrderEl = document.getElementById("yearOrder");
-const yearOmsetEl = document.getElementById("yearOmset");
-
-// form input
+/* ===== ELEMENT ===== */
 const game = document.getElementById("game");
 const layanan = document.getElementById("layanan");
 const harga = document.getElementById("harga");
+const statusEl = document.getElementById("status");
 
+const bulanSelect = document.getElementById("bulan");
+const tahunSelect = document.getElementById("tahun");
+
+const totalOrderEl = document.getElementById("totalOrder");
+const totalOmsetEl = document.getElementById("totalOmset");
+const yearOrderEl = document.getElementById("yearOrder");
+const yearOmsetEl = document.getElementById("yearOmset");
+
+/* ===== DATA ===== */
 let allData = [];
 
-/* ========= INIT (AMAN CORS) ========= */
-fetch(SCRIPT_URL)
-  .then(res => res.text())
-  .then(text => {
-    allData = JSON.parse(text);
-    initTahun();
-    setDefaultBulan();
-    hitungBulanan();
-  })
-  .catch(err => {
-    console.error("Gagal load data:", err);
-  });
+/* ===== HELPER ===== */
+function parseHarga(val) {
+  if (!val) return 0;
+  return Number(String(val).replace(/[^0-9]/g, ""));
+}
 
-/* ========= FORM SUBMIT (NO PREFLIGHT) ========= */
-document.getElementById("orderForm").addEventListener("submit", e => {
-  e.preventDefault();
-
-  const formData = new FormData();
-  formData.append("game", game.value);
-  formData.append("layanan", layanan.value);
-  formData.append("harga", harga.value);
-
-  fetch(SCRIPT_URL, {
-    method: "POST",
-    body: formData
-  })
-    .then(() => {
-      statusEl.innerText = "✅ Order tersimpan";
-      e.target.reset();
-      reloadData();
-    })
-    .catch(() => {
-      statusEl.innerText = "❌ Gagal menyimpan";
-    });
-});
-
-/* ========= FILTER ========= */
-bulanSelect.addEventListener("change", hitungBulanan);
-tahunSelect.addEventListener("change", hitungBulanan);
-
-/* ========= FUNCTIONS ========= */
-
-function reloadData() {
+/* ===== LOAD DATA ===== */
+function loadData() {
   fetch(SCRIPT_URL)
     .then(res => res.text())
     .then(text => {
       allData = JSON.parse(text);
+      initTahun();
+      setDefaultBulan();
       hitungBulanan();
-    });
+    })
+    .catch(err => console.error("Load gagal:", err));
 }
 
+/* ===== SUBMIT ===== */
+document
+  .getElementById("orderForm")
+  .addEventListener("submit", submitOrder);
+
+function submitOrder(e) {
+  e.preventDefault();
+
+  fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      game: game.value,
+      layanan: layanan.value,
+      harga: harga.value
+    })
+  })
+  .then(r => r.text())
+  .then(() => {
+    statusEl.innerText = "✅ Order tersimpan";
+    e.target.reset();
+    loadData();
+  })
+  .catch(err => {
+    console.error(err);
+    statusEl.innerText = "❌ Gagal menyimpan";
+  });
+}
+
+/* ===== FILTER ===== */
+bulanSelect.addEventListener("change", hitungBulanan);
+tahunSelect.addEventListener("change", hitungBulanan);
+
+/* ===== LOGIC ===== */
 function setDefaultBulan() {
-  const now = new Date();
-  bulanSelect.value = now.getMonth();
+  bulanSelect.value = new Date().getMonth();
 }
 
 function initTahun() {
   tahunSelect.innerHTML = "";
 
-  const tahunSet = new Set(
-    allData.map(d => new Date(d.tanggal).getFullYear())
-  );
+  const years = [
+    ...new Set(allData.map(d => new Date(d.tanggal).getFullYear()))
+  ];
 
-  [...tahunSet].sort().forEach(t => {
+  if (years.length === 0) {
+    years.push(new Date().getFullYear());
+  }
+
+  years.sort().forEach(y => {
     const opt = document.createElement("option");
-    opt.value = t;
-    opt.textContent = t;
+    opt.value = y;
+    opt.textContent = y;
     tahunSelect.appendChild(opt);
   });
 
@@ -92,19 +98,20 @@ function hitungBulanan() {
   const bulan = Number(bulanSelect.value);
   const tahun = Number(tahunSelect.value);
 
-  const filtered = allData.filter(d => {
-    const tgl = new Date(d.tanggal);
-    return tgl.getMonth() === bulan && tgl.getFullYear() === tahun;
+  const data = allData.filter(d => {
+    const t = new Date(d.tanggal);
+    return t.getMonth() === bulan && t.getFullYear() === tahun;
   });
 
-  totalOrderEl.innerText = filtered.length;
+  totalOrderEl.innerText = data.length;
 
-  const omset = filtered.reduce(
-    (sum, d) => sum + Number(d.harga), 0
+  const total = data.reduce(
+    (sum, d) => sum + parseHarga(d.harga),
+    0
   );
 
   totalOmsetEl.innerText =
-    "Rp " + omset.toLocaleString("id-ID");
+    "Rp " + total.toLocaleString("id-ID");
 
   hitungTahunan();
 }
@@ -112,20 +119,20 @@ function hitungBulanan() {
 function hitungTahunan() {
   const tahun = Number(tahunSelect.value);
 
-  const dataTahun = allData.filter(d => {
-    const tgl = new Date(d.tanggal);
-    return tgl.getFullYear() === tahun;
-  });
+  const data = allData.filter(d =>
+    new Date(d.tanggal).getFullYear() === tahun
+  );
 
-  yearOrderEl.innerText = dataTahun.length;
+  yearOrderEl.innerText = data.length;
 
-  const omsetTahun = dataTahun.reduce(
-    (sum, d) => sum + Number(d.harga), 0
+  const total = data.reduce(
+    (sum, d) => sum + parseHarga(d.harga),
+    0
   );
 
   yearOmsetEl.innerText =
-    "Rp " + omsetTahun.toLocaleString("id-ID");
+    "Rp " + total.toLocaleString("id-ID");
 }
 
-
-
+/* ===== INIT ===== */
+document.addEventListener("DOMContentLoaded", loadData);
