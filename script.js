@@ -1,138 +1,127 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzTI_im_QXPxxHIDOQRICr36lROJjgDJAju1nWwVGvTrrotfOc4IG3bNpBy7sZ8ZKwmVw/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxqJKH4kFqwfTddvPGSv19SB4MkMXEuHSuRqcaNWs8m2dGu2gz_ONcAQLOQECrxZvc4lw/exec";
 
-/* ===== ELEMENT ===== */
-const game = document.getElementById("game");
-const layanan = document.getElementById("layanan");
-const harga = document.getElementById("harga");
+/* ===== ELEMENT SELECTOR ===== */
+const gameInput = document.getElementById("game");
+const layananInput = document.getElementById("layanan");
+const hargaInput = document.getElementById("harga");
+const modalInput = document.getElementById("modal");
 const statusEl = document.getElementById("status");
 
 const bulanSelect = document.getElementById("bulan");
 const tahunSelect = document.getElementById("tahun");
 
 const totalOrderEl = document.getElementById("totalOrder");
-const totalOmsetEl = document.getElementById("totalOmset");
+const totalProfitEl = document.getElementById("totalOmset"); // ID tetap totalOmset sesuai HTML Anda
 const yearOrderEl = document.getElementById("yearOrder");
-const yearOmsetEl = document.getElementById("yearOmset");
+const yearProfitEl = document.getElementById("yearOmset"); // ID tetap yearOmset sesuai HTML Anda
 
-/* ===== DATA ===== */
 let allData = [];
 
-/* ===== HELPER ===== */
+/* ===== HELPER: MENGUBAH INPUT/DATA MENJADI ANGKA BERSIH ===== */
 function parseHarga(val) {
-  if (!val) return 0;
-  return Number(String(val).replace(/[^0-9]/g, ""));
+  if (val === undefined || val === null || val === "") return 0;
+  let num = typeof val === 'number' ? val : Number(String(val).replace(/[^0-9]/g, ""));
+  return isNaN(num) ? 0 : num;
 }
 
-/* ===== LOAD DATA ===== */
+/* ===== LOAD DATA DARI GOOGLE SHEETS ===== */
 function loadData() {
   fetch(SCRIPT_URL)
-    .then(res => res.text())
-    .then(text => {
-      allData = JSON.parse(text);
+    .then(res => res.json())
+    .then(data => {
+      allData = data;
       initTahun();
       setDefaultBulan();
-      hitungBulanan();
+      hitungStatistik();
     })
-    .catch(err => console.error("Load gagal:", err));
+    .catch(err => {
+      console.error("Gagal memuat data:", err);
+      statusEl.innerText = "Gagal memuat data terbaru.";
+    });
 }
 
-/* ===== SUBMIT ===== */
-document
-  .getElementById("orderForm")
-  .addEventListener("submit", submitOrder);
-
-function submitOrder(e) {
+/* ===== SIMPAN DATA (SUBMIT) ===== */
+document.getElementById("orderForm").addEventListener("submit", function(e) {
   e.preventDefault();
+  statusEl.innerText = "⏳ Sedang menyimpan...";
+
+  const dataKirim = {
+    game: gameInput.value,
+    layanan: layananInput.value,
+    harga: hargaInput.value,
+    modal: modalInput.value
+  };
 
   fetch(SCRIPT_URL, {
     method: "POST",
-    body: JSON.stringify({
-      game: game.value,
-      layanan: layanan.value,
-      harga: harga.value
-    })
+    body: JSON.stringify(dataKirim)
   })
-  .then(r => r.text())
-  .then(() => {
-    statusEl.innerText = "✅ Order tersimpan";
+  .then(res => res.json())
+  .then(result => {
+    statusEl.innerText = "✅ Berhasil disimpan ke Database!";
     e.target.reset();
-    loadData();
+    loadData(); // Refresh data setelah simpan
   })
   .catch(err => {
-    console.error(err);
-    statusEl.innerText = "❌ Gagal menyimpan";
+    console.error("Gagal simpan:", err);
+    statusEl.innerText = "❌ Gagal menyimpan. Coba lagi.";
   });
-}
+});
 
-/* ===== FILTER ===== */
-bulanSelect.addEventListener("change", hitungBulanan);
-tahunSelect.addEventListener("change", hitungBulanan);
+/* ===== LOGIC FILTER & HITUNG ===== */
+bulanSelect.addEventListener("change", hitungStatistik);
+tahunSelect.addEventListener("change", hitungStatistik);
 
-/* ===== LOGIC ===== */
 function setDefaultBulan() {
   bulanSelect.value = new Date().getMonth();
 }
 
 function initTahun() {
+  const currentYear = new Date().getFullYear();
+  let years = [...new Set(allData.map(d => new Date(d.tanggal).getFullYear()))];
+  
+  // Jika data kosong, masukkan tahun saat ini
+  if (years.length === 0 || isNaN(years[0])) years = [currentYear];
+
   tahunSelect.innerHTML = "";
-
-  const years = [
-    ...new Set(allData.map(d => new Date(d.tanggal).getFullYear()))
-  ];
-
-  if (years.length === 0) {
-    years.push(new Date().getFullYear());
-  }
-
   years.sort().forEach(y => {
     const opt = document.createElement("option");
     opt.value = y;
     opt.textContent = y;
     tahunSelect.appendChild(opt);
   });
-
-  tahunSelect.value = new Date().getFullYear();
+  tahunSelect.value = currentYear;
 }
 
-function hitungBulanan() {
-  const bulan = Number(bulanSelect.value);
-  const tahun = Number(tahunSelect.value);
+function hitungStatistik() {
+  const blnSelected = Number(bulanSelect.value);
+  const thnSelected = Number(tahunSelect.value);
 
-  const data = allData.filter(d => {
+  // 1. Hitung Bulanan
+  const dataBulanIni = allData.filter(d => {
     const t = new Date(d.tanggal);
-    return t.getMonth() === bulan && t.getFullYear() === tahun;
+    return t.getMonth() === blnSelected && t.getFullYear() === thnSelected;
   });
 
-  totalOrderEl.innerText = data.length;
+  totalOrderEl.innerText = dataBulanIni.length;
 
-  const total = data.reduce(
-    (sum, d) => sum + parseHarga(d.harga),
-    0
-  );
+  const profitBulanIni = dataBulanIni.reduce((sum, d) => {
+    return sum + (parseHarga(d.harga) - parseHarga(d.modal));
+  }, 0);
+  totalProfitEl.innerText = "Rp " + profitBulanIni.toLocaleString("id-ID");
 
-  totalOmsetEl.innerText =
-    "Rp " + total.toLocaleString("id-ID");
+  // 2. Hitung Tahunan
+  const dataTahunIni = allData.filter(d => {
+    return new Date(d.tanggal).getFullYear() === thnSelected;
+  });
 
-  hitungTahunan();
+  yearOrderEl.innerText = dataTahunIni.length;
+
+  const profitTahunIni = dataTahunIni.reduce((sum, d) => {
+    return sum + (parseHarga(d.harga) - parseHarga(d.modal));
+  }, 0);
+  yearProfitEl.innerText = "Rp " + profitTahunIni.toLocaleString("id-ID");
 }
 
-function hitungTahunan() {
-  const tahun = Number(tahunSelect.value);
-
-  const data = allData.filter(d =>
-    new Date(d.tanggal).getFullYear() === tahun
-  );
-
-  yearOrderEl.innerText = data.length;
-
-  const total = data.reduce(
-    (sum, d) => sum + parseHarga(d.harga),
-    0
-  );
-
-  yearOmsetEl.innerText =
-    "Rp " + total.toLocaleString("id-ID");
-}
-
-/* ===== INIT ===== */
+/* Jalankan saat halaman dibuka */
 document.addEventListener("DOMContentLoaded", loadData);
