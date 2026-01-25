@@ -3,68 +3,84 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Willpedia Order Tracker</title>
+  <title>WILLPEDIA.ID | Order Tracker</title>
   <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<div class="container">
-  <h1>📊 Willpedia</h1>
-  <p class="subtitle">Rekap Order Bulan Ini</p>
-
-  <div class="filter">
-    <select id="bulan">
-        <option value="0">Januari</option>
-        <option value="1">Februari</option>
-        <option value="2">Maret</option>
-        <option value="3">April</option>
-        <option value="4">Mei</option>
-        <option value="5">Juni</option>
-        <option value="6">Juli</option>
-        <option value="7">Agustus</option>
-        <option value="8">September</option>
-        <option value="9">Oktober</option>
-        <option value="10">November</option>
-        <option value="11">Desember</option>
-    </select>
-
-    <select id="tahun"></select>
-   </div>
-
-  <div class="stats">
-    <div class="card">
-      <span>Total Order</span>
-      <h2 id="totalOrder">0</h2>
+  <header class="navbar">
+    <div class="nav-content">
+      <div class="nav-brand">
+        <img src="assets/logo-willpedia.png" alt="Logo">
+        <span>WILLPEDIA.ID</span>
+      </div>
+      
+      <div class="nav-controls">
+        <div class="filter-group">
+          <select id="bulan">
+            <option value="0">Januari</option>
+            <option value="1">Februari</option>
+            <option value="2">Maret</option>
+            <option value="3">April</option>
+            <option value="4">Mei</option>
+            <option value="5">Juni</option>
+            <option value="6">Juli</option>
+            <option value="7">Agustus</option>
+            <option value="8">September</option>
+            <option value="9">Oktober</option>
+            <option value="10">November</option>
+            <option value="11">Desember</option>
+          </select>
+          <div class="filter-divider"></div>
+          <select id="tahun">
+            <option value="2025">2025</option>
+            <option value="2026" selected>2026</option>
+          </select>
+        </div>
+      </div>
     </div>
-    <div class="card">
-      <span>Total Omset</span>
-      <h2 id="totalOmset">Rp 0</h2>
-    </div>
-  </div>
+  </header>
 
-  <div class="yearly">
-    <h3>📅 Rekap Tahunan</h3>
-    <div class="yearly-card">
-        <span>Total Order 1 Tahun</span>
+  <main class="container">
+    <div class="stats-grid">
+      <div class="card">
+        <span>Order (Bulan Ini)</span>
+        <h2 id="totalOrder">0</h2>
+      </div>
+      <div class="card omset">
+        <span>Omset (Bulan Ini)</span>
+        <h2 id="totalOmset">Rp 0</h2>
+      </div>
+    </div>
+
+    <form id="orderForm">
+      <div class="form-header">
+        <h3>➕ Input Order Baru</h3>
+      </div>
+      <div class="input-stack">
+        <input type="text" id="game" placeholder="Nama Game" required>
+        <input type="text" id="layanan" placeholder="Layanan" required>
+        <input type="number" id="harga" placeholder="Harga (Rp)" required>
+        <button type="submit">Simpan ke Database</button>
+      </div>
+    </form>
+  </main>
+
+  <footer class="main-footer">
+    <div class="yearly-content">
+      <div class="yearly-item">
+        <span>Order Setahun</span>
         <h2 id="yearOrder">0</h2>
-    </div>
-    <div class="yearly-card">
-        <span>Total Omset 1 Tahun</span>
+      </div>
+      <div class="yearly-item-divider"></div>
+      <div class="yearly-item">
+        <span>Omset Setahun</span>
         <h2 id="yearOmset">Rp 0</h2>
+      </div>
     </div>
-  </div>
+    <p class="copyright">© WILLPEDIA 2026</p>
+  </footer>
 
-
-  <form id="orderForm">
-    <h3>➕ Input Order</h3>
-    <input type="text" id="game" placeholder="Nama Game" required>
-    <input type="text" id="layanan" placeholder="Layanan" required>
-    <input type="number" id="harga" placeholder="Harga (Rp)" required>
-    <button type="submit">Simpan Order</button>
-    <p id="status"></p>
-  </form>
-</div>
-
-<script src="script.js"></script>
 </body>
 </html>
