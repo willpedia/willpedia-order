@@ -8,38 +8,47 @@ const tahunSelect = document.getElementById("tahun");
 const yearOrderEl = document.getElementById("yearOrder");
 const yearOmsetEl = document.getElementById("yearOmset");
 
+// form input
+const game = document.getElementById("game");
+const layanan = document.getElementById("layanan");
+const harga = document.getElementById("harga");
 
 let allData = [];
 
-/* ========= INIT ========= */
+/* ========= INIT (AMAN CORS) ========= */
 fetch(SCRIPT_URL)
-  .then(res => res.json())
-  .then(data => {
-    allData = data;
+  .then(res => res.text())
+  .then(text => {
+    allData = JSON.parse(text);
     initTahun();
     setDefaultBulan();
     hitungBulanan();
+  })
+  .catch(err => {
+    console.error("Gagal load data:", err);
   });
 
-/* ========= FORM SUBMIT ========= */
+/* ========= FORM SUBMIT (NO PREFLIGHT) ========= */
 document.getElementById("orderForm").addEventListener("submit", e => {
   e.preventDefault();
 
+  const formData = new FormData();
+  formData.append("game", game.value);
+  formData.append("layanan", layanan.value);
+  formData.append("harga", harga.value);
+
   fetch(SCRIPT_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      game: game.value,
-      layanan: layanan.value,
-      harga: harga.value
+    body: formData
+  })
+    .then(() => {
+      statusEl.innerText = "✅ Order tersimpan";
+      e.target.reset();
+      reloadData();
     })
-  })
-  .then(() => {
-    statusEl.innerText = "✅ Order tersimpan";
-    e.target.reset();
-    reloadData();
-  })
-  .catch(() => statusEl.innerText = "❌ Gagal menyimpan");
+    .catch(() => {
+      statusEl.innerText = "❌ Gagal menyimpan";
+    });
 });
 
 /* ========= FILTER ========= */
@@ -50,9 +59,9 @@ tahunSelect.addEventListener("change", hitungBulanan);
 
 function reloadData() {
   fetch(SCRIPT_URL)
-    .then(res => res.json())
-    .then(data => {
-      allData = data;
+    .then(res => res.text())
+    .then(text => {
+      allData = JSON.parse(text);
       hitungBulanan();
     });
 }
@@ -63,6 +72,8 @@ function setDefaultBulan() {
 }
 
 function initTahun() {
+  tahunSelect.innerHTML = "";
+
   const tahunSet = new Set(
     allData.map(d => new Date(d.tanggal).getFullYear())
   );
@@ -95,7 +106,6 @@ function hitungBulanan() {
   totalOmsetEl.innerText =
     "Rp " + omset.toLocaleString("id-ID");
 
-  // ✅ PANGGIL DI SINI
   hitungTahunan();
 }
 
@@ -116,5 +126,6 @@ function hitungTahunan() {
   yearOmsetEl.innerText =
     "Rp " + omsetTahun.toLocaleString("id-ID");
 }
+
 
 
