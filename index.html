@@ -3,80 +3,841 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WILLPEDIA ORDER</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" type="image/png" href="logohitam.png">
+  <title>WILLPEDIA</title>
+
+  <!-- Tailwind tanpa build, cocok untuk satu file GitHub Pages -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <style type="text/tailwindcss">
+    body {
+      background:
+        radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 28rem),
+        #f8fafc;
+    }
+
+    .card {
+      @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+    }
+
+    .label {
+      @apply mb-1.5 block text-xs font-bold text-slate-600;
+    }
+
+    .field {
+      @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100;
+    }
+
+    .btn-primary {
+      @apply inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60;
+    }
+
+    .btn-secondary {
+      @apply inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50;
+    }
+
+    .btn-danger {
+      @apply inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100;
+    }
+
+    .thin-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+    .thin-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+  </style>
 </head>
-<body>
 
-  <nav class="navbar">
-    <div class="nav-brand">
-      <img src="assets/logo-willpedia.png" alt="Logo">
-      <span>WILLPEDIA</span>
-    </div>
-    
-    <div class="nav-filters">
-      <select id="bulan">
-        <option value="0">Januari</option>
-        <option value="1">Februari</option>
-        <option value="2">Maret</option>
-        <option value="3">April</option>
-        <option value="4">Mei</option>
-        <option value="5">Juni</option>
-        <option value="6">Juli</option>
-        <option value="7">Agustus</option>
-        <option value="8">September</option>
-        <option value="9">Oktober</option>
-        <option value="10">November</option>
-        <option value="11">Desember</option>
-      </select>
-      <select id="tahun"></select>
-    </div>
-  </nav>
+<body class="min-h-screen text-slate-800">
+  <div id="toastContainer" class="fixed right-4 top-4 z-[100] flex w-[min(92vw,360px)] flex-col gap-2"></div>
 
-  <div class="container">
-    <div class="section-card">
-      <div class="stat-row">
-        <div class="stat-item">
-          <span>Order (Bulan Ini)</span>
-          <h2 id="totalOrder">0</h2>
+  <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
+    <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+      <div class="flex min-w-0 items-center gap-3">
+        <div class="grid size-11 shrink-0 place-items-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <img
+            id="brandLogo"
+            src="logohitam.png"
+            alt="Logo Willpedia"
+            class="h-full w-full object-contain"
+            onerror="this.classList.add('hidden'); document.getElementById('logoFallback').classList.remove('hidden');"
+          >
+          <span id="logoFallback" class="hidden font-black text-blue-600">W</span>
         </div>
-        <div class="stat-item">
-          <span>Keuntungan (Bulan Ini)</span>
-          <h2 id="totalOmset" class="red-text">Rp 0</h2>
+
+        <div class="min-w-0">
+          <h1 class="truncate text-base font-black text-slate-900 sm:text-lg">WILLPEDIA</h1>
+          <p class="truncate text-xs text-slate-500">Catatan order dan pembayaran joki</p>
         </div>
       </div>
-    </div>
 
-    <div class="section-card">
-      <form id="orderForm">
-        <h3>Input Order Baru</h3>
-        <input type="text" id="game" placeholder="Nama Game" required>
-        <input type="text" id="layanan" placeholder="Layanan" required>
-        <input type="number" id="harga" placeholder="Harga (Rp)" required>
-        <input type="number" id="modal" placeholder="Modal / Bayar Worker (Rp)" required>
-        <button type="submit">Simpan ke Database</button>
+      <button id="refreshButton" type="button" class="btn-secondary">
+        <span id="refreshIcon">↻</span>
+        <span class="hidden sm:inline">&nbsp;Muat Ulang</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-7xl space-y-5 px-4 py-5 sm:px-6">
+    <section class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <article class="card p-4">
+        <p class="text-xs font-bold text-slate-500">Total Order</p>
+        <p id="statOrders" class="mt-2 text-2xl font-black text-slate-900">0</p>
+      </article>
+
+      <article class="card p-4">
+        <p class="text-xs font-bold text-slate-500">Omzet</p>
+        <p id="statRevenue" class="mt-2 truncate text-xl font-black text-emerald-700 sm:text-2xl">Rp0</p>
+      </article>
+
+      <article class="card p-4">
+        <p class="text-xs font-bold text-slate-500">Total Upah Joki</p>
+        <p id="statWorkerCost" class="mt-2 truncate text-xl font-black text-amber-700 sm:text-2xl">Rp0</p>
+      </article>
+
+      <article class="card p-4">
+        <p class="text-xs font-bold text-slate-500">Estimasi Laba</p>
+        <p id="statProfit" class="mt-2 truncate text-xl font-black text-blue-700 sm:text-2xl">Rp0</p>
+      </article>
+    </section>
+
+    <section class="card overflow-hidden">
+      <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 sm:px-5">
+        <div>
+          <h2 id="formTitle" class="font-black text-slate-900">Tambah Order</h2>
+          <p class="mt-0.5 text-xs text-slate-500">
+            Waktu diperbarui dan waktu dibayar diisi otomatis.
+          </p>
+        </div>
+        <button id="cancelEditButton" type="button" class="btn-secondary hidden">Batal Edit</button>
+      </div>
+
+      <form id="orderForm" class="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 sm:p-5">
+        <input id="rowNumber" type="hidden">
+
+        <div>
+          <label class="label" for="tanggal">Tanggal</label>
+          <input id="tanggal" class="field" type="date" required>
+        </div>
+
+        <div>
+          <label class="label" for="pelanggan">Pelanggan</label>
+          <input id="pelanggan" class="field" type="text" maxlength="100" placeholder="Nama pelanggan" required>
+        </div>
+
+        <div>
+          <label class="label" for="game">Game</label>
+          <input id="game" class="field" type="text" maxlength="100" placeholder="Nama game" required>
+        </div>
+
+        <div>
+          <label class="label" for="layanan">Layanan</label>
+          <input id="layanan" class="field" type="text" maxlength="150" placeholder="Jenis layanan" required>
+        </div>
+
+        <div>
+          <label class="label" for="harga">Harga</label>
+          <input id="harga" class="field" type="number" min="0" step="1000" placeholder="150000" required>
+        </div>
+
+        <div>
+          <label class="label" for="upahJoki">Upah Joki</label>
+          <input id="upahJoki" class="field" type="number" min="0" step="1000" placeholder="100000" required>
+        </div>
+
+        <div>
+          <label class="label" for="statusOrder">Status Order</label>
+          <select id="statusOrder" class="field">
+            <option value="Masuk">Masuk</option>
+            <option value="Diproses">Diproses</option>
+            <option value="Selesai">Selesai</option>
+            <option value="Dibatalkan">Dibatalkan</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="label" for="statusBayar">Status Bayar</label>
+          <select id="statusBayar" class="field">
+            <option value="Belum Dibayar">Belum Dibayar</option>
+            <option value="Sudah Dibayar">Sudah Dibayar</option>
+          </select>
+        </div>
+
+        <div class="rounded-xl bg-slate-50 p-3">
+          <p class="text-xs font-bold text-slate-500">Estimasi laba</p>
+          <p id="profitPreview" class="mt-1 text-lg font-black text-emerald-700">Rp0</p>
+        </div>
+
+        <div class="sm:col-span-2 lg:col-span-3">
+          <label class="label" for="catatan">Catatan</label>
+          <textarea id="catatan" class="field min-h-24 resize-y" maxlength="500" placeholder="Catatan tambahan"></textarea>
+        </div>
+
+        <button id="submitButton" class="btn-primary sm:col-span-2 lg:col-span-3" type="submit">
+          <span id="submitText">Simpan Order</span>
+        </button>
       </form>
-      <p id="status"></p>
+    </section>
+
+    <section class="card overflow-hidden">
+      <div class="border-b border-slate-200 p-4 sm:p-5">
+        <div class="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
+          <div>
+            <h2 class="font-black text-slate-900">Daftar Order</h2>
+            <p id="resultInfo" class="mt-0.5 text-xs text-slate-500">Menampilkan 0 order.</p>
+          </div>
+          <button id="exportButton" type="button" class="btn-secondary">Ekspor CSV</button>
+        </div>
+
+        <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <input id="searchFilter" class="field lg:col-span-2" type="search" placeholder="Cari pelanggan, game, atau layanan...">
+
+          <select id="monthFilter" class="field">
+            <option value="all">Semua Bulan</option>
+            <option value="0">Januari</option>
+            <option value="1">Februari</option>
+            <option value="2">Maret</option>
+            <option value="3">April</option>
+            <option value="4">Mei</option>
+            <option value="5">Juni</option>
+            <option value="6">Juli</option>
+            <option value="7">Agustus</option>
+            <option value="8">September</option>
+            <option value="9">Oktober</option>
+            <option value="10">November</option>
+            <option value="11">Desember</option>
+          </select>
+
+          <select id="yearFilter" class="field">
+            <option value="all">Semua Tahun</option>
+          </select>
+
+          <select id="statusFilter" class="field">
+            <option value="all">Semua Status Order</option>
+            <option value="Masuk">Masuk</option>
+            <option value="Diproses">Diproses</option>
+            <option value="Selesai">Selesai</option>
+            <option value="Dibatalkan">Dibatalkan</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="loadingState" class="hidden p-10 text-center">
+        <div class="mx-auto size-9 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600"></div>
+        <p class="mt-3 text-sm font-bold text-slate-500">Mengambil data...</p>
+      </div>
+
+      <div id="emptyState" class="hidden p-10 text-center">
+        <p class="text-sm font-bold text-slate-500">Order tidak ditemukan.</p>
+      </div>
+
+      <div id="desktopWrap" class="thin-scrollbar hidden overflow-x-auto lg:block">
+        <table class="min-w-[1280px] w-full text-left text-sm">
+          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="px-4 py-3">Tanggal</th>
+              <th class="px-4 py-3">Pelanggan</th>
+              <th class="px-4 py-3">Game / Layanan</th>
+              <th class="px-4 py-3 text-right">Harga</th>
+              <th class="px-4 py-3 text-right">Upah</th>
+              <th class="px-4 py-3 text-right">Laba</th>
+              <th class="px-4 py-3">Status Order</th>
+              <th class="px-4 py-3">Status Bayar</th>
+              <th class="px-4 py-3">Diperbarui</th>
+              <th class="px-4 py-3">Dibayar</th>
+              <th class="px-4 py-3 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+
+      <div id="mobileList" class="divide-y divide-slate-100 lg:hidden"></div>
+    </section>
+  </main>
+
+  <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+    <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+      <h3 class="text-lg font-black text-slate-900">Hapus order?</h3>
+      <p id="confirmMessage" class="mt-2 text-sm text-slate-600"></p>
+      <div class="mt-5 grid grid-cols-2 gap-3">
+        <button id="confirmCancel" type="button" class="btn-secondary">Batal</button>
+        <button id="confirmDelete" type="button" class="btn-danger">Hapus</button>
+      </div>
     </div>
   </div>
 
-  <footer class="footer-stats">
-    <div class="yearly-card">
-      <div class="yearly-box">
-        <span>Order Setahun</span>
-        <h2 id="yearOrder">0</h2>
-      </div>
-      <div class="v-line"></div>
-      <div class="yearly-box">
-        <span>Keuntungan Setahun</span>
-        <h2 id="yearOmset" class="red-text">Rp 0</h2>
-      </div>
-    </div>
-    <p class="copyright">© WILLPEDIA 2026</p>
-  </footer>
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxhmlomv_uTKpx-Xqg-TJmvRcPEOxyQUfozt9eAOzMePAXREnPPybHIA1m2W34O8qSRaw/exec";
 
-  <script src="script.js"></script>
+    const state = {
+      orders: [],
+      filtered: [],
+      editingRow: null,
+      loading: false
+    };
+
+    const el = {
+      toastContainer: document.getElementById("toastContainer"),
+      refreshButton: document.getElementById("refreshButton"),
+      refreshIcon: document.getElementById("refreshIcon"),
+      statOrders: document.getElementById("statOrders"),
+      statRevenue: document.getElementById("statRevenue"),
+      statWorkerCost: document.getElementById("statWorkerCost"),
+      statProfit: document.getElementById("statProfit"),
+      form: document.getElementById("orderForm"),
+      formTitle: document.getElementById("formTitle"),
+      rowNumber: document.getElementById("rowNumber"),
+      tanggal: document.getElementById("tanggal"),
+      pelanggan: document.getElementById("pelanggan"),
+      game: document.getElementById("game"),
+      layanan: document.getElementById("layanan"),
+      harga: document.getElementById("harga"),
+      upahJoki: document.getElementById("upahJoki"),
+      statusOrder: document.getElementById("statusOrder"),
+      statusBayar: document.getElementById("statusBayar"),
+      catatan: document.getElementById("catatan"),
+      profitPreview: document.getElementById("profitPreview"),
+      submitButton: document.getElementById("submitButton"),
+      submitText: document.getElementById("submitText"),
+      cancelEditButton: document.getElementById("cancelEditButton"),
+      searchFilter: document.getElementById("searchFilter"),
+      monthFilter: document.getElementById("monthFilter"),
+      yearFilter: document.getElementById("yearFilter"),
+      statusFilter: document.getElementById("statusFilter"),
+      exportButton: document.getElementById("exportButton"),
+      resultInfo: document.getElementById("resultInfo"),
+      loadingState: document.getElementById("loadingState"),
+      emptyState: document.getElementById("emptyState"),
+      desktopWrap: document.getElementById("desktopWrap"),
+      tableBody: document.getElementById("tableBody"),
+      mobileList: document.getElementById("mobileList"),
+      confirmModal: document.getElementById("confirmModal"),
+      confirmMessage: document.getElementById("confirmMessage"),
+      confirmCancel: document.getElementById("confirmCancel"),
+      confirmDelete: document.getElementById("confirmDelete")
+    };
+
+    function today() {
+      const now = new Date();
+      const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 10);
+    }
+
+    function number(value) {
+      const parsed = Number(String(value ?? "").replace(/[^\d.-]/g, ""));
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function rupiah(value) {
+      return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        maximumFractionDigits: 0
+      }).format(number(value));
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function dateParts(value) {
+      const raw = String(value ?? "").slice(0, 10);
+      const [year, month, day] = raw.split("-").map(Number);
+      if (!year || !month || !day) return null;
+      return { year, month: month - 1, day };
+    }
+
+    function formatDate(value, includeTime = false) {
+      if (!value) return "-";
+      const date = new Date(value);
+
+      if (Number.isNaN(date.getTime())) {
+        const parts = dateParts(value);
+        if (!parts) return "-";
+        return new Intl.DateTimeFormat("id-ID", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric"
+        }).format(new Date(parts.year, parts.month, parts.day));
+      }
+
+      return new Intl.DateTimeFormat("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        ...(includeTime ? { hour: "2-digit", minute: "2-digit" } : {})
+      }).format(date);
+    }
+
+    function debounce(callback, delay = 250) {
+      let timer;
+      return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => callback(...args), delay);
+      };
+    }
+
+    function toast(message, type = "success") {
+      const style = {
+        success: "border-emerald-200 bg-emerald-50 text-emerald-800",
+        error: "border-red-200 bg-red-50 text-red-800",
+        info: "border-blue-200 bg-blue-50 text-blue-800"
+      };
+
+      const node = document.createElement("div");
+      node.className = `rounded-xl border px-4 py-3 text-sm font-bold shadow-lg ${style[type] || style.info}`;
+      node.textContent = message;
+      el.toastContainer.appendChild(node);
+
+      setTimeout(() => node.remove(), 3200);
+    }
+
+    function statusBadge(status) {
+      const classes = {
+        "Masuk": "bg-blue-50 text-blue-700 ring-blue-200",
+        "Diproses": "bg-amber-50 text-amber-700 ring-amber-200",
+        "Selesai": "bg-emerald-50 text-emerald-700 ring-emerald-200",
+        "Dibatalkan": "bg-red-50 text-red-700 ring-red-200"
+      };
+
+      return `<span class="inline-flex rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${classes[status] || "bg-slate-50 text-slate-700 ring-slate-200"}">${escapeHtml(status)}</span>`;
+    }
+
+    function paymentBadge(status) {
+      const paid = status === "Sudah Dibayar";
+      return `<span class="inline-flex rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${
+        paid
+          ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+          : "bg-orange-50 text-orange-700 ring-orange-200"
+      }">${escapeHtml(status)}</span>`;
+    }
+
+    async function api(action = "list", payload = {}) {
+      if (action === "list") {
+        const response = await fetch(`${SCRIPT_URL}?action=list&_=${Date.now()}`, {
+          method: "GET",
+          redirect: "follow"
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      }
+
+      const response = await fetch(SCRIPT_URL, {
+        method: "POST",
+        redirect: "follow",
+        body: JSON.stringify({ action, ...payload })
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    }
+
+    function setLoading(value) {
+      state.loading = value;
+      el.refreshButton.disabled = value;
+      el.submitButton.disabled = value;
+      el.refreshIcon.classList.toggle("animate-spin", value);
+      el.loadingState.classList.toggle("hidden", !value);
+
+      if (value) {
+        el.emptyState.classList.add("hidden");
+        el.desktopWrap.style.display = "none";
+        el.mobileList.classList.add("hidden");
+      }
+    }
+
+    async function loadOrders() {
+      setLoading(true);
+
+      try {
+        const result = await api("list");
+        if (!result.success) throw new Error(result.message || "Gagal mengambil data.");
+
+        state.orders = Array.isArray(result.data) ? result.data : [];
+        state.orders.sort((a, b) =>
+          String(b.tanggal).localeCompare(String(a.tanggal)) ||
+          number(b._row) - number(a._row)
+        );
+
+        populateYears();
+      } catch (error) {
+        console.error(error);
+        state.orders = [];
+        toast(error.message || "Gagal memuat data.", "error");
+      } finally {
+        setLoading(false);
+        applyFilters();
+      }
+    }
+
+    function populateYears() {
+      const selected = el.yearFilter.value;
+      const years = [...new Set(
+        state.orders
+          .map(order => dateParts(order.tanggal)?.year)
+          .filter(Boolean)
+      )].sort((a, b) => b - a);
+
+      el.yearFilter.innerHTML =
+        '<option value="all">Semua Tahun</option>' +
+        years.map(year => `<option value="${year}">${year}</option>`).join("");
+
+      if ([...el.yearFilter.options].some(option => option.value === selected)) {
+        el.yearFilter.value = selected;
+      }
+    }
+
+    function applyFilters() {
+      const keyword = el.searchFilter.value.trim().toLowerCase();
+      const month = el.monthFilter.value;
+      const year = el.yearFilter.value;
+      const status = el.statusFilter.value;
+
+      state.filtered = state.orders.filter(order => {
+        const parts = dateParts(order.tanggal);
+        const searchable = `${order.pelanggan} ${order.game} ${order.layanan} ${order.catatan}`.toLowerCase();
+
+        return (
+          (!keyword || searchable.includes(keyword)) &&
+          (month === "all" || parts?.month === Number(month)) &&
+          (year === "all" || parts?.year === Number(year)) &&
+          (status === "all" || order.statusOrder === status)
+        );
+      });
+
+      render();
+    }
+
+    function render() {
+      renderStats();
+      renderOrders();
+    }
+
+    function renderStats() {
+      const valid = state.filtered.filter(order => order.statusOrder !== "Dibatalkan");
+      const revenue = valid.reduce((sum, order) => sum + number(order.harga), 0);
+      const wage = valid.reduce((sum, order) => sum + number(order.upahJoki), 0);
+
+      el.statOrders.textContent = state.filtered.length;
+      el.statRevenue.textContent = rupiah(revenue);
+      el.statWorkerCost.textContent = rupiah(wage);
+      el.statProfit.textContent = rupiah(revenue - wage);
+    }
+
+    function renderOrders() {
+      const orders = state.filtered;
+      el.resultInfo.textContent = `Menampilkan ${orders.length} dari ${state.orders.length} order.`;
+
+      if (state.loading) return;
+
+      const empty = orders.length === 0;
+      el.emptyState.classList.toggle("hidden", !empty);
+      el.desktopWrap.style.display = empty ? "none" : "";
+      el.mobileList.classList.toggle("hidden", empty);
+
+      if (empty) {
+        el.tableBody.innerHTML = "";
+        el.mobileList.innerHTML = "";
+        return;
+      }
+
+      el.tableBody.innerHTML = orders.map(order => {
+        const profit = number(order.harga) - number(order.upahJoki);
+
+        return `
+          <tr class="align-top hover:bg-slate-50">
+            <td class="px-4 py-4 font-semibold">${formatDate(order.tanggal)}</td>
+            <td class="px-4 py-4 font-bold text-slate-900">${escapeHtml(order.pelanggan)}</td>
+            <td class="px-4 py-4">
+              <p class="font-bold text-slate-900">${escapeHtml(order.game)}</p>
+              <p class="mt-1 max-w-56 text-xs text-slate-500">${escapeHtml(order.layanan)}</p>
+            </td>
+            <td class="px-4 py-4 text-right font-semibold">${rupiah(order.harga)}</td>
+            <td class="px-4 py-4 text-right font-semibold">${rupiah(order.upahJoki)}</td>
+            <td class="px-4 py-4 text-right font-black ${profit >= 0 ? "text-emerald-700" : "text-red-700"}">${rupiah(profit)}</td>
+            <td class="px-4 py-4">${statusBadge(order.statusOrder)}</td>
+            <td class="px-4 py-4">${paymentBadge(order.statusBayar)}</td>
+            <td class="px-4 py-4 text-xs text-slate-500">${formatDate(order.diperbaruiPada, true)}</td>
+            <td class="px-4 py-4 text-xs text-slate-500">${formatDate(order.dibayarPada, true)}</td>
+            <td class="px-4 py-4">
+              <div class="flex justify-end gap-2">
+                <button data-action="pay" data-row="${order._row}" class="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold hover:bg-slate-100">
+                  ${order.statusBayar === "Sudah Dibayar" ? "Batal Bayar" : "Bayar"}
+                </button>
+                <button data-action="edit" data-row="${order._row}" class="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100">Edit</button>
+                <button data-action="delete" data-row="${order._row}" class="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100">Hapus</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      el.mobileList.innerHTML = orders.map(order => {
+        const profit = number(order.harga) - number(order.upahJoki);
+
+        return `
+          <article class="p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="font-black text-slate-900">${escapeHtml(order.game)}</p>
+                <p class="mt-1 text-sm text-slate-600">${escapeHtml(order.layanan)}</p>
+                <p class="mt-1 text-xs font-bold text-slate-400">${formatDate(order.tanggal)}</p>
+              </div>
+              ${statusBadge(order.statusOrder)}
+            </div>
+
+            <div class="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3 text-sm">
+              <div>
+                <p class="text-xs text-slate-500">Pelanggan</p>
+                <p class="font-bold">${escapeHtml(order.pelanggan)}</p>
+              </div>
+              <div>
+                <p class="text-xs text-slate-500">Laba</p>
+                <p class="font-black ${profit >= 0 ? "text-emerald-700" : "text-red-700"}">${rupiah(profit)}</p>
+              </div>
+              <div>
+                <p class="text-xs text-slate-500">Harga</p>
+                <p class="font-bold">${rupiah(order.harga)}</p>
+              </div>
+              <div>
+                <p class="text-xs text-slate-500">Upah Joki</p>
+                <p class="font-bold">${rupiah(order.upahJoki)}</p>
+              </div>
+            </div>
+
+            <div class="mt-3">${paymentBadge(order.statusBayar)}</div>
+
+            <div class="mt-3 text-xs text-slate-500">
+              <p>Diperbarui: ${formatDate(order.diperbaruiPada, true)}</p>
+              <p class="mt-1">Dibayar: ${formatDate(order.dibayarPada, true)}</p>
+            </div>
+
+            <div class="mt-3 flex gap-2">
+              <button data-action="pay" data-row="${order._row}" class="btn-secondary flex-1">
+                ${order.statusBayar === "Sudah Dibayar" ? "Batal Bayar" : "Bayar"}
+              </button>
+              <button data-action="edit" data-row="${order._row}" class="btn-secondary flex-1">Edit</button>
+              <button data-action="delete" data-row="${order._row}" class="btn-danger flex-1">Hapus</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function updateProfitPreview() {
+      const profit = number(el.harga.value) - number(el.upahJoki.value);
+      el.profitPreview.textContent = rupiah(profit);
+      el.profitPreview.className = `mt-1 text-lg font-black ${profit >= 0 ? "text-emerald-700" : "text-red-700"}`;
+    }
+
+    function formData() {
+      return {
+        tanggal: el.tanggal.value,
+        pelanggan: el.pelanggan.value.trim(),
+        game: el.game.value.trim(),
+        layanan: el.layanan.value.trim(),
+        harga: number(el.harga.value),
+        upahJoki: number(el.upahJoki.value),
+        statusOrder: el.statusOrder.value,
+        statusBayar: el.statusBayar.value,
+        catatan: el.catatan.value.trim()
+      };
+    }
+
+    function resetForm() {
+      state.editingRow = null;
+      el.form.reset();
+      el.rowNumber.value = "";
+      el.tanggal.value = today();
+      el.statusOrder.value = "Masuk";
+      el.statusBayar.value = "Belum Dibayar";
+      el.formTitle.textContent = "Tambah Order";
+      el.submitText.textContent = "Simpan Order";
+      el.cancelEditButton.classList.add("hidden");
+      updateProfitPreview();
+    }
+
+    function startEdit(row) {
+      const order = state.orders.find(item => number(item._row) === number(row));
+      if (!order) return;
+
+      state.editingRow = number(row);
+      el.rowNumber.value = row;
+      el.tanggal.value = String(order.tanggal || "").slice(0, 10);
+      el.pelanggan.value = order.pelanggan || "";
+      el.game.value = order.game || "";
+      el.layanan.value = order.layanan || "";
+      el.harga.value = number(order.harga);
+      el.upahJoki.value = number(order.upahJoki);
+      el.statusOrder.value = order.statusOrder || "Masuk";
+      el.statusBayar.value = order.statusBayar || "Belum Dibayar";
+      el.catatan.value = order.catatan || "";
+      el.formTitle.textContent = "Edit Order";
+      el.submitText.textContent = "Simpan Perubahan";
+      el.cancelEditButton.classList.remove("hidden");
+      updateProfitPreview();
+      el.form.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    async function saveOrder(event) {
+      event.preventDefault();
+      if (!el.form.reportValidity()) return;
+
+      el.submitButton.disabled = true;
+      const editing = Boolean(state.editingRow);
+      el.submitText.textContent = editing ? "Memperbarui..." : "Menyimpan...";
+
+      try {
+        const result = await api(editing ? "update" : "create", {
+          rowNumber: state.editingRow,
+          order: formData()
+        });
+
+        if (!result.success) throw new Error(result.message || "Gagal menyimpan order.");
+
+        toast(editing ? "Order berhasil diperbarui." : "Order berhasil ditambahkan.");
+        resetForm();
+        await loadOrders();
+      } catch (error) {
+        console.error(error);
+        toast(error.message || "Gagal menyimpan order.", "error");
+      } finally {
+        el.submitButton.disabled = false;
+        el.submitText.textContent = state.editingRow ? "Simpan Perubahan" : "Simpan Order";
+      }
+    }
+
+    async function togglePay(row) {
+      const order = state.orders.find(item => number(item._row) === number(row));
+      if (!order) return;
+
+      const nextStatus = order.statusBayar === "Sudah Dibayar"
+        ? "Belum Dibayar"
+        : "Sudah Dibayar";
+
+      try {
+        const result = await api("update", {
+          rowNumber: number(row),
+          order: { statusBayar: nextStatus }
+        });
+
+        if (!result.success) throw new Error(result.message || "Gagal mengubah pembayaran.");
+
+        toast(`Status bayar menjadi ${nextStatus}.`);
+        await loadOrders();
+      } catch (error) {
+        console.error(error);
+        toast(error.message || "Gagal mengubah pembayaran.", "error");
+      }
+    }
+
+    function confirmDelete(row) {
+      const order = state.orders.find(item => number(item._row) === number(row));
+      if (!order) return;
+
+      el.confirmMessage.textContent = `${order.game} milik ${order.pelanggan} akan dihapus permanen.`;
+      el.confirmModal.classList.remove("hidden");
+      el.confirmModal.classList.add("flex");
+
+      el.confirmDelete.onclick = async () => {
+        closeModal();
+
+        try {
+          const result = await api("delete", { rowNumber: number(row) });
+          if (!result.success) throw new Error(result.message || "Gagal menghapus order.");
+
+          if (state.editingRow === number(row)) resetForm();
+          toast("Order berhasil dihapus.");
+          await loadOrders();
+        } catch (error) {
+          console.error(error);
+          toast(error.message || "Gagal menghapus order.", "error");
+        }
+      };
+    }
+
+    function closeModal() {
+      el.confirmModal.classList.add("hidden");
+      el.confirmModal.classList.remove("flex");
+      el.confirmDelete.onclick = null;
+    }
+
+    function handleActions(event) {
+      const button = event.target.closest("[data-action]");
+      if (!button) return;
+
+      const row = number(button.dataset.row);
+      if (button.dataset.action === "edit") startEdit(row);
+      if (button.dataset.action === "pay") togglePay(row);
+      if (button.dataset.action === "delete") confirmDelete(row);
+    }
+
+    function csvEscape(value) {
+      return `"${String(value ?? "").replaceAll('"', '""')}"`;
+    }
+
+    function exportCsv() {
+      if (!state.filtered.length) {
+        toast("Tidak ada data untuk diekspor.", "info");
+        return;
+      }
+
+      const headers = [
+        "tanggal",
+        "pelanggan",
+        "game",
+        "layanan",
+        "harga",
+        "upahJoki",
+        "statusOrder",
+        "statusBayar",
+        "catatan",
+        "diperbaruiPada",
+        "dibayarPada"
+      ];
+
+      const rows = state.filtered.map(order =>
+        headers.map(header => order[header] ?? "")
+      );
+
+      const csv = "\uFEFF" + [headers, ...rows]
+        .map(row => row.map(csvEscape).join(","))
+        .join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `willpedia-order-${today()}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    el.form.addEventListener("submit", saveOrder);
+    el.cancelEditButton.addEventListener("click", resetForm);
+    el.harga.addEventListener("input", updateProfitPreview);
+    el.upahJoki.addEventListener("input", updateProfitPreview);
+    el.refreshButton.addEventListener("click", loadOrders);
+    el.exportButton.addEventListener("click", exportCsv);
+
+    el.searchFilter.addEventListener("input", debounce(applyFilters));
+    el.monthFilter.addEventListener("change", applyFilters);
+    el.yearFilter.addEventListener("change", applyFilters);
+    el.statusFilter.addEventListener("change", applyFilters);
+
+    el.tableBody.addEventListener("click", handleActions);
+    el.mobileList.addEventListener("click", handleActions);
+    el.confirmCancel.addEventListener("click", closeModal);
+
+    document.addEventListener("DOMContentLoaded", () => {
+      resetForm();
+      loadOrders();
+    });
+  </script>
 </body>
 </html>
-
-
