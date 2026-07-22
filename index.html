@@ -443,7 +443,7 @@
 
     /* Header atas selalu terlihat ketika halaman di-scroll. */
     :root {
-      --app-header-height: 72px;
+      --app-header-height: calc(72px + env(safe-area-inset-top));
     }
 
     body {
@@ -471,6 +471,33 @@
     /* Saat navigasi menuju section, judul tidak tertutup header. */
     .nav-anchor {
       scroll-margin-top: calc(var(--app-header-height) + 16px) !important;
+    }
+
+    /* Safe area iPhone: logo dan tombol tidak tertutup sinyal/baterai. */
+    .app-header {
+      padding-top: env(safe-area-inset-top) !important;
+      box-sizing: border-box;
+    }
+
+    .app-header > div {
+      min-height: 64px;
+    }
+
+    @supports (padding-top: max(0px)) {
+      .app-header {
+        padding-top: max(env(safe-area-inset-top), 0px) !important;
+      }
+    }
+
+    /* Saat dibuka dari browser biasa, tidak menambah ruang berlebihan. */
+    @media (display-mode: browser) {
+      .app-header {
+        padding-top: 0 !important;
+      }
+
+      :root {
+        --app-header-height: 72px;
+      }
     }
 
   </style>
